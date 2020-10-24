@@ -168,6 +168,216 @@ def update_g2(loc, scenario, lcoe):
 
 
 @app.callback(
+    dash.dependencies.Output('one', 'children'),
+    [dash.dependencies.Input('num_scenarios', 'value')]
+)
+def g1(num):
+    return html.Div([
+
+
+
+        html.Div([
+            html.Div(id='output_curve_g1',
+                     style={'padding': 0}),
+            html.H5("Map Data Selection"),
+            dcc.Dropdown(
+
+                id='map_data_selection_g1_selector',
+                options=[
+                    {'label': col.split(':')[1], 'value':col.split(':')[1]} for col in cols
+                ],
+                value='mean_cf'
+            ),
+
+
+            html.Div(id='output_mapbox_g1'),
+
+            html.H5("Correlation Table selections"),
+            html.Div([
+                html.Div([
+                    dcc.Dropdown(id='correlation_type_g1',
+                                 options=[
+                                     {'label': 'Pearson',
+                                      'value': 'pearson'},
+                                     {'label': 'Kendall',
+                                      'value': 'kendall'},
+                                     {'label': 'Spearman',
+                                      'value': 'spearman'}
+                                 ],
+                                 value='pearson')]),
+
+
+
+                html.Div([
+                    html.Div(id="correlations_output_g1",
+                             className='ten columns'),
+                    html.Div([
+
+                        dcc.Checklist(
+                            id='corr_radio_list_g1',
+                            options=[{'label': i, 'value': i}
+                                     for i in attributes],
+                        )],
+                        className='two columns'
+                    ),
+
+                ])
+            ], className="row")
+        ])
+    ])
+
+
+@app.callback(
+    dash.dependencies.Output('two', 'children'),
+    [dash.dependencies.Input('num_scenarios', 'value')]
+)
+def g2(num):
+    return html.Div([
+        html.Div([
+
+            html.Div(id='output_curve_g2'),
+            html.H5("Map Data Selection"),
+            dcc.Dropdown(
+
+                id='map_data_selection_g2_selector',
+                options=[
+                    {'label': col.split(':')[1], 'value':col.split(':')[1]} for col in cols
+                ],
+                value='mean_cf'
+            ),
+
+            html.Div(id='output_mapbox_g2'),
+
+            html.H5("correlation Table selections"),
+            html.Div([
+                html.Div([
+                    dcc.Dropdown(id='correlation_type_g2',
+                                 options=[
+                                     {'label': 'Pearson',
+                                      'value': 'pearson'},
+                                     {'label': 'Kendall',
+                                      'value': 'kendall'},
+                                     {'label': 'Spearman',
+                                      'value': 'spearman'}
+                                 ],
+                                 value='pearson')], className="six columns"),
+
+
+
+            ], className="row"),
+
+            html.Div([
+                html.Div(id="correlations_output_g2",
+                         className='ten columns'),
+                html.Div([
+
+                    dcc.Checklist(
+                        id='corr_radio_list_g2',
+                        options=[{'label': i, 'value': i}
+                                 for i in attributes],
+                    )],
+                    className='two columns'
+                ),
+
+            ])
+        ], className="row")])
+
+
+@ app.callback(
+    dash.dependencies.Output('output', 'children'),
+    [dash.dependencies.Input('num_scenarios', 'value')]
+)
+def update_num_scenarios(num):
+    if(num == 1):
+        return html.Div([
+
+
+            html.Div([
+                html.H5("LBNL Region"),
+                dcc.Dropdown(
+                    id='location_dropdown_g1',
+                    options=[
+                        {'label': l, 'value': l} for l in locs
+                    ],
+                    value='All'
+                ),
+            ], className="four columns", style={'padding': 0}),
+
+
+            html.Div([
+                html.H5("Scenarios"),
+                dcc.Dropdown(
+                    id='scenarios_g1',
+                    options=[
+                        {'label': sc, 'value': sc} for sc in scenarios
+                    ],
+                    value='All'
+                ),
+            ], className="four columns", style={'padding': 0}),
+
+
+            html.Div(id='one')
+
+
+        ], style={'padding': 10})
+
+    elif(num == 2):
+        return html.Div([
+
+            html.Div([
+                html.H5("Location 1"),
+                dcc.Dropdown(
+                    id='location_dropdown_g1',
+                    options=[
+                        {'label': l, 'value': l} for l in locs
+                    ],
+                    value='All'
+                ),
+                html.H5("Scenario 1"),
+                dcc.Dropdown(
+                    id='scenarios_g1',
+                    options=[
+                        {'label': sc, 'value': sc} for sc in scenarios
+                    ],
+                    value='All'
+                ),
+            ], className='six columns'),
+            html.Div([
+                html.H5("Location 2"),
+                dcc.Dropdown(
+                    id='location_dropdown_g2',
+                    options=[
+                        {'label': l, 'value': l} for l in locs
+                    ],
+                    value='All'
+                ),
+                html.H5("Scenario 2"),
+                dcc.Dropdown(
+                    id='scenarios_g2',
+                    options=[
+                        {'label': sc, 'value': sc} for sc in scenarios
+                    ],
+                    value='All'
+                )
+            ], className='six columns'),
+
+
+            html.Div([
+
+
+                html.Div(
+                    id='one',
+                    className='six columns'
+                ),
+                html.Div(
+                    id='two',
+                    className='six columns'
+                )
+            ])])
+
+
+"""
+@app.callback(
     dash.dependencies.Output('output', 'children'),
     [dash.dependencies.Input('num_scenarios', 'value')])
 def update_num_scenarios(num):
@@ -234,7 +444,20 @@ def update_num_scenarios(num):
 
 
 
-                    html.Div(id="correlations_output_g1")
+                    html.Div([
+                        html.Div(id="correlations_output_g1",
+                                 className='ten columns'),
+                        html.Div([
+
+                            dcc.Checklist(
+                                id='corr_radio_list_g1',
+                                options=[{'label': i, 'value': i}
+                                         for i in attributes],
+                            )],
+                            className='two columns'
+                        ),
+
+                    ])
                 ], className="row")
             ])
         ])
@@ -314,7 +537,20 @@ def update_num_scenarios(num):
 
                     ], className="row"),
 
-                    html.Div(id="correlations_output_g1")
+                    html.Div([
+                        html.Div(id="correlations_output_g1",
+                                 className='ten columns'),
+                        html.Div([
+
+                            dcc.Checklist(
+                                id='corr_radio_list_g1',
+                                options=[{'label': i, 'value': i}
+                                         for i in attributes],
+                            )],
+                            className='two columns'
+                        ),
+
+                    ])
                 ], className="six columns"),
 
 
@@ -351,14 +587,12 @@ def update_num_scenarios(num):
                     ], className="row"),
 
                     html.Div([
-
-
                         html.Div(id="correlations_output_g2",
                                  className='ten columns'),
                         html.Div([
 
                             dcc.Checklist(
-                                id='corr_radio_list',
+                                id='corr_radio_list_g2',
                                 options=[{'label': i, 'value': i}
                                          for i in attributes],
                             )],
@@ -410,9 +644,10 @@ def update_num_scenarios(num):
 
 
         ])
+"""
 
 
-@app.callback(
+@ app.callback(
     dash.dependencies.Output('output_mapbox_g1', 'children'),
     [dash.dependencies.Input('location_dropdown_g1', 'value'),
      dash.dependencies.Input('scenarios_g1', 'value'),
@@ -435,14 +670,14 @@ def update_map_g1(loc, scenario, num_scenarios, data):
 
         size_arr = np.full(len(newDF[scenario+":"+data]), size)
         fig = px.scatter_mapbox(newDF, lat='latitude', lon='longitude', size=size_arr, hover_data=[
-                                scenario+":"+data], size_max=size, color=scenario+":"+data, zoom=zoom, height=height)
+            scenario+":"+data], size_max=size, color=scenario+":"+data, zoom=zoom, height=height)
         fig.update_layout(mapbox_style='open-street-map')
         return dcc.Graph(
             figure=fig
         )
 
 
-@app.callback(
+@ app.callback(
     dash.dependencies.Output('output_mapbox_g2', 'children'),
     [dash.dependencies.Input('location_dropdown_g2', 'value'),
      dash.dependencies.Input('scenarios_g2', 'value'),
@@ -460,20 +695,21 @@ def update_map_g2(loc, scenario, data):
 
         size_arr = np.full(len(newDF[scenario+":"+data]), size)
         fig = px.scatter_mapbox(newDF, lat='latitude', lon='longitude', size=size_arr, hover_data=[
-                                scenario+":"+data], size_max=size, color=scenario+":"+data, zoom=zoom, height=600)
+            scenario+":"+data], size_max=size, color=scenario+":"+data, zoom=zoom, height=600)
         fig.update_layout(mapbox_style='open-street-map')
         return dcc.Graph(
             figure=fig
         )
 
 
-@app.callback(
+@ app.callback(
     dash.dependencies.Output('correlations_output_g1', 'children'),
     [dash.dependencies.Input('correlation_type_g1', 'value'),
      dash.dependencies.Input('location_dropdown_g1', 'value'),
-     dash.dependencies.Input('scenarios_g1', 'value')]
+     dash.dependencies.Input('scenarios_g1', 'value'),
+     dash.dependencies.Input('corr_radio_list_g1', 'value')]
 )
-def update_correlations_g1(typeCorr, loc, scenario):
+def update_correlations_g1(typeCorr, loc, scenario, corr_radio_list):
 
     if(scenario == 'All'):
         return
@@ -483,6 +719,14 @@ def update_correlations_g1(typeCorr, loc, scenario):
     l = [x for x in list(temp.columns) if not x.startswith(scenario)]
     temp = temp.drop(l, axis=1)
     temp = temp.drop(scenario + ":count", axis=1)
+
+    if(type(corr_radio_list) == type(None)):
+        pass
+    elif(type(corr_radio_list) == list and len(corr_radio_list) == 0):
+        pass
+    else:
+        dropList = [scenario + ':' + i for i in corr_radio_list]
+        temp = temp.drop(dropList, axis=1)
 
     columns = list(temp.columns)
     columns = [i.split(':')[1] for i in columns]
@@ -504,12 +748,12 @@ def update_correlations_g1(typeCorr, loc, scenario):
         style_table={'overflowX': 'auto', 'minWidth': '100%'}))
 
 
-@app.callback(
+@ app.callback(
     dash.dependencies.Output('correlations_output_g2', 'children'),
     [dash.dependencies.Input('correlation_type_g2', 'value'),
      dash.dependencies.Input('location_dropdown_g2', 'value'),
      dash.dependencies.Input('scenarios_g2', 'value'),
-     dash.dependencies.Input('corr_radio_list', 'value')]
+     dash.dependencies.Input('corr_radio_list_g2', 'value')]
 )
 def update_correlations_g2(typeCorr, loc, scenario, corr_radio_list):
 
@@ -536,6 +780,7 @@ def update_correlations_g2(typeCorr, loc, scenario, corr_radio_list):
     # temp.rename(str.split(':')[1], axis='columns')
 
     corr = temp.corr(typeCorr)
+    corr = corr.round(4)
     cols = list(corr.columns)
     #
     corr.insert(0, " ", cols, False)
