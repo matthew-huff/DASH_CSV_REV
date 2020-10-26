@@ -95,8 +95,19 @@ app.layout = html.Div(children=[
                 value='total_lcoe'
             ),
         ], className="four columns", style={'padding': 10}),
-    ], className="row", style={'padding': 10}),
 
+        html.Div([
+            html.H4("View"),
+            dcc.RadioItems(
+                id='view_selector',
+                options=[
+                    {'label': 'Data', 'value': 'Data'},
+                    {'label': 'Deviations', 'value': 'Deviations'}
+                ],
+                value='Data'
+            )
+        ])
+    ], className="row", style={'padding': 10}),
 
     html.Div(id='selector'),
     html.Div(id='output'),
@@ -383,92 +394,100 @@ def g2(num):
 
 @ app.callback(
     dash.dependencies.Output('selector', 'children'),
-    [dash.dependencies.Input('num_scenarios', 'value')]
+    [dash.dependencies.Input('num_scenarios', 'value'),
+     dash.dependencies.Input('view_selector', 'value')]
 )
-def update_selectors(num):
-    if(num == 1):
-        return html.Div([
-            html.Div([
-                html.H5("Location"),
-                dcc.Dropdown(
-                    id='location_dropdown_g1',
-                    options=[
-                        {'label': l, 'value': l} for l in locs
-                    ],
-                    value='All'
-                ),
-                html.H5("Scenario"),
-                dcc.Dropdown(
-                    id='scenarios_g1',
-                    options=[
-                        {'label': sc, 'value': sc} for sc in scenarios
-                    ],
-                    value='All'
-                ),
-            ], className='six columns'), ], className='row')
+def update_selectors(num, view):
+    if(view == 'Data'):
+        if(num == 1):
+            return html.Div([
+                html.Div([
+                    html.H5("Location"),
+                    dcc.Dropdown(
+                        id='location_dropdown_g1',
+                        options=[
+                            {'label': l, 'value': l} for l in locs
+                        ],
+                        value='All'
+                    ),
+                    html.H5("Scenario"),
+                    dcc.Dropdown(
+                        id='scenarios_g1',
+                        options=[
+                            {'label': sc, 'value': sc} for sc in scenarios
+                        ],
+                        value='All'
+                    ),
+                ], className='six columns'), ], className='row')
 
-    elif(num == 2):
+        elif(num == 2):
+            return html.Div([
+                html.Div([
+                    html.H5("Location 1"),
+                    dcc.Dropdown(
+                        id='location_dropdown_g1',
+                        options=[
+                            {'label': l, 'value': l} for l in locs
+                        ],
+                        value='All'
+                    ),
+                    html.H5("Scenario 1"),
+                    dcc.Dropdown(
+                        id='scenarios_g1',
+                        options=[
+                            {'label': sc, 'value': sc} for sc in scenarios
+                        ],
+                        value='All'
+                    ),
+                ], className='six columns'),
+                html.Div([
+                    html.H5("Location 2"),
+                    dcc.Dropdown(
+                        id='location_dropdown_g2',
+                        options=[
+                            {'label': l, 'value': l} for l in locs
+                        ],
+                        value='All'
+                    ),
+                    html.H5("Scenario 2"),
+                    dcc.Dropdown(
+                        id='scenarios_g2',
+                        options=[
+                            {'label': sc, 'value': sc} for sc in scenarios
+                        ],
+                        value='All'
+                    )
+                ], className='six columns')])
+    elif(view == 'Deviations'):
         return html.Div([
-            html.Div([
-                html.H5("Location 1"),
-                dcc.Dropdown(
-                    id='location_dropdown_g1',
-                    options=[
-                        {'label': l, 'value': l} for l in locs
-                    ],
-                    value='All'
-                ),
-                html.H5("Scenario 1"),
-                dcc.Dropdown(
-                    id='scenarios_g1',
-                    options=[
-                        {'label': sc, 'value': sc} for sc in scenarios
-                    ],
-                    value='All'
-                ),
-            ], className='six columns'),
-            html.Div([
-                html.H5("Location 2"),
-                dcc.Dropdown(
-                    id='location_dropdown_g2',
-                    options=[
-                     {'label': l, 'value': l} for l in locs
-                     ],
-                    value='All'
-                ),
-                html.H5("Scenario 2"),
-                dcc.Dropdown(
-                    id='scenarios_g2',
-                    options=[
-                        {'label': sc, 'value': sc} for sc in scenarios
-                    ],
-                    value='All'
-                )
-            ], className='six columns')])
+            html.Div(id='dev_selector', className="four columns"),
+            html.Div(id='deviations_data', className="eight columns")], className="row")
 
 
 @ app.callback(
     dash.dependencies.Output('output', 'children'),
-    [dash.dependencies.Input('num_scenarios', 'value')]
+    [dash.dependencies.Input('num_scenarios', 'value'),
+     dash.dependencies.Input('view_selector', 'value')]
 )
-def update_num_scenarios(num):
-    if(num == 1):
-        return html.Div([
-            html.Div(id='one')
-        ], style={'padding': 10})
+def update_num_scenarios(num, view):
+    if(view == 'Data'):
+        if(num == 1):
+            return html.Div([
+                html.Div(id='one')
+            ], style={'padding': 10})
 
-    elif(num == 2):
-        return html.Div([
-            html.Div([
-                html.Div(
-                    id='one',
-                    className='six columns'
-                ),
-                html.Div(
-                    id='two',
-                    className='six columns'
-                )
-            ])])
+        elif(num == 2):
+            return html.Div([
+                html.Div([
+                    html.Div(
+                        id='one',
+                        className='six columns'
+                    ),
+                    html.Div(
+                        id='two',
+                        className='six columns'
+                    )
+                ])])
 
 
 @ app.callback(
@@ -727,7 +746,131 @@ def generate_diff(n_clicks, loc1, loc2, scen1, scen2, diff_s):
     return DIFF_FN
 
 
-# def generate_deviations():
+@app.callback(
+    dash.dependencies.Output('dev_selector', 'children'),
+    [dash.dependencies.Input('view_selector', 'value')]
+)
+def generate_deviations_options(val):
+
+    devAttrs = []
+    for attr in attributes:
+        devAttrs.append(attr + '_std')
+        devAttrs.append(attr + '_rsd')
+        devAttrs.append(attr + '_minimum')
+        devAttrs.append(attr + '_quartile1')
+        devAttrs.append(attr + '_quartile2')
+        devAttrs.append(attr + '_quartile3')
+        devAttrs.append(attr + '_quartile4')
+
+    return html.Div([
+
+        html.Div([
+            dcc.Checklist(
+                id='dev_selector_checklist',
+                options=[
+                    {'label': i, 'value': i} for i in scenarios
+                ],
+                value=[i for i in scenarios],
+
+            )
+        ], className="eight columns"),
+
+        html.Div([
+            dcc.Dropdown(
+
+                 id='dev_dropdown',
+                 options=[
+                     {'label': da, 'value': da} for da in devAttrs
+                 ],
+                 value='mean_cf_std'
+                 ),
+
+        ], className="four columns")
+
+    ], className="row")
+
+
+def getSTD(arrs):
+    arr = np.vstack(arrs)
+    v = np.std(arr, axis=0)
+    return v
+
+
+def getQuartiles(arrs):
+    arr = np.vstack(arrs)
+    minimum = np.min(arr, axis=0)
+    q1 = np.quantile(arr, 0.25, axis=0)
+    q2 = np.quantile(arr, 0.5, axis=0)
+    q3 = np.quantile(arr, 0.75, axis=0)
+    q4 = np.quantile(arr, 1, axis=0)
+    return minimum, q1, q2, q3, q4
+
+
+def getNumZeros(arrs):
+    arr = np.vstack(arrs)
+    isna = np.count_nonzero(np.isnan(arr), axis=0)
+    for i, j in enumerate(isna):
+        isna[i] = len(arrs)-j
+    return isna
+
+
+def averageVariables(arrs, attr):
+    print("Attribute: " + attr + ", Len of arrs = " + str(len(arrs)))
+    arr = np.vstack(arrs)
+    a = np.nanmean(arr, axis=0)
+    v = getSTD(arrs)
+    rsd = (100 * v) / a
+    return a, v, rsd
+
+
+@app.callback(
+    dash.dependencies.Output('deviations_data', 'children'),
+    [dash.dependencies.Input('dev_selector_checklist', 'value'),
+     dash.dependencies.Input('dev_dropdown', 'value')]
+)
+def generate_deviations(selectors, dropdown):
+
+    newDF = df.copy()
+    varList = []
+    avgDict = {}
+    print(selectors)
+    for attr in attributes:
+        for column in list(newDF.columns):
+            try:
+                if(column.split(':')[1] == attr and column.split(':')[0] in selectors):
+                    varList.append(newDF[column].astype(float).to_numpy())
+            except IndexError:
+                avgDict[column] = newDF[column].to_numpy()
+            except ValueError:
+                pass
+
+        if(len(varList) == 0):
+            pass
+        else:
+            avg, std, rsd = averageVariables(varList, attr)
+
+            numScenarios = getNumZeros(varList)
+            minimum, q1, q2, q3, q4 = getQuartiles(varList)
+
+            avgDict[attr] = avg
+            avgDict[attr+"_std"] = std
+            avgDict[attr+"_rsd"] = rsd
+            avgDict[attr+"_minimum"] = minimum
+            avgDict[attr+"_quartile1"] = q1
+            avgDict[attr+"_quartile2"] = q2
+            avgDict[attr+"_quartile3"] = q3
+            avgDict[attr+"_quartile4"] = q4
+            varList = []
+    avgDict["num_scenarios"] = numScenarios
+    avgDict['lbnl_regions'] = newDF['Existing Social Acceptance - Mid:lbnl_region']
+    avgDF = pd.DataFrame.from_dict(avgDict)
+    print(avgDF['mean_cf_std'])
+    fig = px.scatter_mapbox(avgDF, lat='latitude', lon='longitude',
+                            size_max=5, color=dropdown, zoom=3, height=600)
+    fig.update_layout(mapbox_style='open-street-map')
+    return dcc.Graph(
+        figure=fig
+    )
 
 
 def wr(output):
