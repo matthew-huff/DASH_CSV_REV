@@ -69,6 +69,7 @@ app.layout = html.Div(children=[
     html.H1(children="Wind Turbine Dashboard", style={
             'textAlign': 'center', 'padding': 10}),
 
+
     html.Div([
 
         html.Div([
@@ -95,6 +96,7 @@ app.layout = html.Div(children=[
             ),
         ], className="four columns", style={'padding': 10}),
     ], className="row", style={'padding': 10}),
+
 
     html.Div(id='selector'),
     html.Div(id='output'),
@@ -189,7 +191,7 @@ def g1(num):
                             html.H5('LCOE Curve'),
                             html.Div(id='output_curve_g1')
                         ],
-                            className="three columns")),
+                            className="three columns", style={'padding-top': 30})),
 
                     html.Div([
                         html.H5("Map Data Selection"),
@@ -231,7 +233,7 @@ def g1(num):
                     html.Div(id="correlations_output_g1",
                              className='ten columns'),
                     html.Div([
-
+                        html.H5("Remove"),
                         dcc.Checklist(
                             id='corr_radio_list_g1',
                             options=[{'label': i, 'value': i}
@@ -243,7 +245,7 @@ def g1(num):
                 ])
             ], className="row")])
     elif(num == 2):
-        return html.Div([
+        return html.Div([html.Div([
             html.Div([
 
                 html.Div(id='output_curve_g1'),
@@ -281,7 +283,7 @@ def g1(num):
                     html.Div(id="correlations_output_g1",
                              className='ten columns'),
                     html.Div([
-
+                        html.H5("Remove"),
                         dcc.Checklist(
                             id='corr_radio_list_g1',
                             options=[{'label': i, 'value': i}
@@ -291,7 +293,36 @@ def g1(num):
                     ),
 
                 ])
-            ], className="row")])
+            ], className="row")]),
+
+            html.Div([
+
+
+                html.Div([
+                    html.Div([
+                        html.Div([
+                            dcc.Dropdown(id='diff_selector',
+                                         options=[
+                                             {'label': col.split(':')[1], 'value':col.split(':')[1]} for col in cols
+                                         ],
+                                         value='Select value...'),
+                        ], className="six columns"),
+                        html.Div(
+                            html.Button("Generate Diff", id='diff_button'),
+                            className="six columns"
+                        )
+                    ], style={'padding-top': 10}),
+                ]),
+                html.Div([
+                    html.Div([
+                        html.H6("Diff file output = :")
+                    ], className="six columns"),
+                    html.Div([
+                        html.H6(id="diff_filename")
+                    ], className="six columns")
+                ]),
+                html.Div(id='diff_mapbox_output', style={'padding-top': 80}),
+                html.Div(id='empty')], className="row")])
 
 
 @ app.callback(
@@ -337,7 +368,7 @@ def g2(num):
                 html.Div(id="correlations_output_g2",
                          className='ten columns'),
                 html.Div([
-
+                    html.H5("Remove"),
                     dcc.Checklist(
                         id='corr_radio_list_g2',
                         options=[{'label': i, 'value': i}
@@ -438,277 +469,6 @@ def update_num_scenarios(num):
                     className='six columns'
                 )
             ])])
-
-
-"""
-@app.callback(
-    dash.dependencies.Output('output', 'children'),
-    [dash.dependencies.Input('num_scenarios', 'value')])
-def update_num_scenarios(num):
-
-    if(num == 1):
-        return html.Div([
-
-            html.Div([
-
-
-                html.Div([
-                    html.H5("LBNL Region"),
-                    dcc.Dropdown(
-                        id='location_dropdown_g1',
-                        options=[
-                            {'label': l, 'value': l} for l in locs
-                        ],
-                        value='All'
-                    ),
-                ], className="four columns", style={'padding': 0}),
-
-
-                html.Div([
-                    html.H5("Scenarios"),
-                    dcc.Dropdown(
-                        id='scenarios_g1',
-                        options=[
-                            {'label': sc, 'value': sc} for sc in scenarios
-                        ],
-                        value='All'
-                    ),
-                ], className="four columns", style={'padding': 0})
-
-
-            ], style={'padding': 10}),
-
-
-
-            html.Div([
-                html.Div(id='output_curve_g1', style={'padding': 150}),
-                html.H5("Map Data Selection"),
-                dcc.Dropdown(
-
-                    id='map_data_selection_g1_selector',
-                    options=[
-                        {'label': col.split(':')[1], 'value':col.split(':')[1]} for col in cols
-                    ],
-                    value='mean_cf'
-                ),
-
-
-                html.Div(id='output_mapbox_g1'),
-
-                html.H5("Correlation Table selections"),
-                html.Div([
-                    html.Div([
-                        dcc.Dropdown(id='correlation_type_g1',
-                                     options=[
-                                         {'label': 'Pearson', 'value': 'pearson'},
-                                         {'label': 'Kendall', 'value': 'kendall'},
-                                         {'label': 'Spearman', 'value': 'spearman'}
-                                     ],
-                                     value='pearson')]),
-
-
-
-                    html.Div([
-                        html.Div(id="correlations_output_g1",
-                                 className='ten columns'),
-                        html.Div([
-
-                            dcc.Checklist(
-                                id='corr_radio_list_g1',
-                                options=[{'label': i, 'value': i}
-                                         for i in attributes],
-                            )],
-                            className='two columns'
-                        ),
-
-                    ])
-                ], className="row")
-            ])
-        ])
-
-    elif(num == 2):
-        return html.Div([html.Div([
-            html.Div([
-                html.H5("Location 1"),
-                dcc.Dropdown(
-                    id='location_dropdown_g1',
-                    options=[
-                        {'label': l, 'value': l} for l in locs
-                    ],
-                    value='All'
-                ),
-                html.H5("Scenario 1"),
-                dcc.Dropdown(
-                    id='scenarios_g1',
-                    options=[
-                        {'label': sc, 'value': sc} for sc in scenarios
-                    ],
-                    value='All'
-                ),
-
-            ], className="six columns", style={'padding': 10}),
-
-            html.Div([
-                html.H5("Location 2"),
-                dcc.Dropdown(
-                    id='location_dropdown_g2',
-                    options=[
-                        {'label': l, 'value': l} for l in locs
-                    ],
-                    value='All'
-                ),
-                html.H5("Scenario 2"),
-                dcc.Dropdown(
-                    id='scenarios_g2',
-                    options=[
-                        {'label': sc, 'value': sc} for sc in scenarios
-                    ],
-                    value='All'
-                ),
-
-            ], className="six columns", style={'padding': 10}),
-        ], className="row", style={'padding': 10}),
-
-            html.Div([
-                html.Div([
-                    html.Div(id='output_curve_g1'),
-                    html.H5("Map Data Selection"),
-                    dcc.Dropdown(
-
-                        id='map_data_selection_g1_selector',
-                        options=[
-                            {'label': col.split(':')[1], 'value':col.split(':')[1]} for col in cols
-                        ],
-                        value='mean_cf'
-                    ),
-
-                    html.Div(id='output_mapbox_g1'),
-                    html.H5("correlation Table selections"),
-                    html.Div([
-                        html.Div([
-                            dcc.Dropdown(id='correlation_type_g1',
-                                         options=[
-                                             {'label': 'Pearson',
-                                                 'value': 'pearson'},
-                                             {'label': 'Kendall',
-                                                 'value': 'kendall'},
-                                             {'label': 'Spearman',
-                                                 'value': 'spearman'}
-                                         ],
-                                         value='pearson')], className="six columns"),
-
-
-
-                    ], className="row"),
-
-                    html.Div([
-                        html.Div(id="correlations_output_g1",
-                                 className='ten columns'),
-                        html.Div([
-
-                            dcc.Checklist(
-                                id='corr_radio_list_g1',
-                                options=[{'label': i, 'value': i}
-                                         for i in attributes],
-                            )],
-                            className='two columns'
-                        ),
-
-                    ])
-                ], className="six columns"),
-
-
-                html.Div([
-                    html.Div(id='output_curve_g2'),
-                    html.H5("Map Data Selection"),
-                    dcc.Dropdown(
-
-                        id='map_data_selection_g2_selector',
-                        options=[
-                            {'label': col.split(':')[1], 'value':col.split(':')[1]} for col in cols
-                        ],
-                        value='mean_cf'
-                    ),
-
-                    html.Div(id='output_mapbox_g2'),
-
-                    html.H5("correlation Table selections"),
-                    html.Div([
-                        html.Div([
-                            dcc.Dropdown(id='correlation_type_g2',
-                                         options=[
-                                             {'label': 'Pearson',
-                                                 'value': 'pearson'},
-                                             {'label': 'Kendall',
-                                                 'value': 'kendall'},
-                                             {'label': 'Spearman',
-                                                 'value': 'spearman'}
-                                         ],
-                                         value='pearson')], className="six columns"),
-
-
-
-                    ], className="row"),
-
-                    html.Div([
-                        html.Div(id="correlations_output_g2",
-                                 className='ten columns'),
-                        html.Div([
-
-                            dcc.Checklist(
-                                id='corr_radio_list_g2',
-                                options=[{'label': i, 'value': i}
-                                         for i in attributes],
-                            )],
-                            className='two columns'
-                        ),
-
-                    ])
-                ], className="six columns")
-            ], className="row"),
-
-            html.Div([
-                html.Div([
-                    html.Div([
-                        dcc.Dropdown(id='diff_selector',
-                                     options=[
-                                         {'label': col.split(':')[1], 'value':col.split(':')[1]} for col in cols
-                                     ],
-                                     value='Select value...'),
-                    ], className="six columns"),
-
-                    html.Div(
-                        html.Button("Generate Diff", id='diff_button'),
-                        className="six columns"
-                    )
-
-                ], style={'padding-top': 10}),
-
-
-
-
-            ]),
-            html.Div([
-                html.Div([
-                    html.H6("Diff file output = :")
-                ], className="six columns"),
-                html.Div([
-                    html.H6(id="diff_filename")
-                ], className="six columns")
-
-            ]),
-
-            html.Div(id='diff_mapbox_output', style={'padding-top': 80}),
-
-            html.Div(id='empty')
-
-
-
-
-
-
-        ])
-"""
 
 
 @ app.callback(
@@ -951,12 +711,11 @@ def generate_diff(n_clicks, loc1, loc2, scen1, scen2, diff_s):
             scen1_data = newDF[scen1+":"+var].astype(float)
             scen2_data = newDF[scen2+":"+var].astype(float)
         except ValueError:
-            wr(var)
             continue
 
         try:
-            diff_data = np.subtract(scen2_data.to_numpy().astype(
-                float), scen1_data.to_numpy().astype(float))
+            diff_data = np.subtract(scen1_data.to_numpy().astype(
+                float), scen2_data.to_numpy().astype(float))
             diff_dict[var] = diff_data
         except TypeError:
             pass
@@ -968,55 +727,14 @@ def generate_diff(n_clicks, loc1, loc2, scen1, scen2, diff_s):
     return DIFF_FN
 
 
+# def generate_deviations():
+
+
 def wr(output):
     f = open('log.txt', 'a')
     f.write("----------\n")
     f.write(output)
     f.close()
-
-
-"""
-@app.callback(
-    dash.dependencies.Output('map_data_selection_g1', 'children')
-    [dash.dependencies.Input('none', 'children')]
-)
-def map_selector_g1():
-    cols = list(dataFrame.columns)
-    for col in cols:
-        if(not col.startswith('Existing Social Acceptance')):
-            cols.remove(col)
-
-    return dcc.Dropdown(
-                id='map_data_g1_selector',
-                options=[
-                    {'label':col.split(':')[1], 'value':col.split(':')[1]} for col in cols
-                ],
-                value='mean_cf'
-            ),
-
-@app.callback(
-    dash.dependencies.Output('map_data_selection_g2', 'children')
-)
-def map_selector_g2():
-    return returnMapChoiceSelector('map_data_selection_g2_selector')
-
-
-def returnMapChoiceSelector(id_val):
-    cols = list(dataFrame.columns)
-    for col in cols:
-        if(not col.startswith('Existing Social Acceptance')):
-            cols.remove(col)
-
-    return dcc.Dropdown(
-                id=id_val,
-                options=[
-                    {'label':col.split(':')[1], 'value':col.split(':')[1]} for col in cols
-                ],
-                value='mean_cf'
-            ),
-
-
-"""
 
 
 if __name__ == '__main__':
