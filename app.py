@@ -6,12 +6,14 @@ import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 import dash_table
+import time
 
 dataFile = "../outfile_extended.csv"
 
 diffDF = 0
-
+devDF = 0
 DIFF_FN = ""
+
 dataCSVs = {
 
     'All': pd.read_csv('../outfile_extended.csv'),
@@ -40,7 +42,7 @@ scenarios = ['Open Access - Mid', 'Open Access - Low', 'Open Access - Current', 
              'Fed Land Exclusion - Mid', 'Limited Access - Mid']
 dataFrame = dataCSVs['northeast']
 
-
+currentSelectors = 0
 colList = list(df.columns)
 x = []
 for col in colList:
@@ -195,32 +197,18 @@ def g1(num):
         return html.Div([
             html.Div([
 
-                html.Div([
+                html.Div(id='output_curve_g1'),
+                html.H5("Map Data Selection"),
+                dcc.Dropdown(
 
-                    html.Div(
-                        html.Div([
-                            html.H5('LCOE Curve'),
-                            html.Div(id='output_curve_g1')
-                        ],
-                            className="three columns", style={'padding-top': 30})),
+                    id='map_data_selection_g1_selector',
+                    options=[
+                        {'label': col.split(':')[1], 'value':col.split(':')[1]} for col in cols
+                    ],
+                    value='mean_cf'
+                ),
 
-                    html.Div([
-                        html.H5("Map Data Selection"),
-                        dcc.Dropdown(
-
-                            id='map_data_selection_g1_selector',
-                            options=[
-                                {'label': col.split(':')[1], 'value':col.split(':')[1]} for col in cols
-                            ],
-                            value='mean_cf'
-                        ),
-
-                        html.Div(id='output_mapbox_g1'),
-
-                    ], className="nine columns")
-
-                ], className="row"),
-
+                html.Div(id='output_mapbox_g1'),
 
                 html.H5("correlation Table selections"),
                 html.Div([
@@ -460,8 +448,8 @@ def update_selectors(num, view):
                 ], className='six columns')])
     elif(view == 'Deviations'):
         return html.Div([
-            html.Div(id='dev_selector', className="four columns"),
-            html.Div(id='deviations_data', className="eight columns")], className="row")
+            html.Div(id='dev_selector', className="two columns"),
+            html.Div(id='deviations_view', className="ten columns")], className="row")
 
 
 @ app.callback(
@@ -746,7 +734,7 @@ def generate_diff(n_clicks, loc1, loc2, scen1, scen2, diff_s):
     return DIFF_FN
 
 
-@app.callback(
+@ app.callback(
     dash.dependencies.Output('dev_selector', 'children'),
     [dash.dependencies.Input('view_selector', 'value')]
 )
@@ -775,38 +763,38 @@ def generate_deviations_options(val):
             )
         ], className="eight columns"),
 
-        html.Div([
-            dcc.Dropdown(
 
-                 id='dev_dropdown',
-                 options=[
-                     {'label': da, 'value': da} for da in devAttrs
-                 ],
-                 value='mean_cf_std'
-                 ),
-
-        ], className="four columns")
 
     ], className="row")
 
 
-def getSTD(arrs):
+def getSTD(arrs, n):
     arr = np.vstack(arrs)
-    v = np.std(arr, axis=0)
+    if(n):
+        v = np.nanstd(arr, axis=0)
+    else:
+        v = np.std(arr, axis=0)
     return v
 
 
-def getQuartiles(arrs):
+def getQuartiles(arrs, n):
     arr = np.vstack(arrs)
-    minimum = np.min(arr, axis=0)
-    q1 = np.quantile(arr, 0.25, axis=0)
-    q2 = np.quantile(arr, 0.5, axis=0)
-    q3 = np.quantile(arr, 0.75, axis=0)
-    q4 = np.quantile(arr, 1, axis=0)
+    if(n):
+        minimum = np.nanmin(arr, axis=0)
+        q1 = np.nanquantile(arr, 0.25, axis=0)
+        q2 = np.nanquantile(arr, 0.5, axis=0)
+        q3 = np.nanquantile(arr, 0.75, axis=0)
+        q4 = np.nanquantile(arr, 1, axis=0)
+    else:
+        minimum = np.min(arr, axis=0)
+        q1 = np.quantile(arr, 0.25, axis=0)
+        q2 = np.quantile(arr, 0.5, axis=0)
+        q3 = np.quantile(arr, 0.75, axis=0)
+        q4 = np.quantile(arr, 1, axis=0)
     return minimum, q1, q2, q3, q4
 
 
-def getNumZeros(arrs):
+def getNumZeros(arrs, n):
     arr = np.vstack(arrs)
     isna = np.count_nonzero(np.isnan(arr), axis=0)
     for i, j in enumerate(isna):
@@ -814,26 +802,28 @@ def getNumZeros(arrs):
     return isna
 
 
-def averageVariables(arrs, attr):
-    print("Attribute: " + attr + ", Len of arrs = " + str(len(arrs)))
+def getMean(arrs, attr, n):
+    # print("Attribute: " + attr + ", Len of arrs = " + str(len(arrs)))
     arr = np.vstack(arrs)
-    a = np.nanmean(arr, axis=0)
-    v = getSTD(arrs)
+    if(n):
+        a = np.nanmean(arr, axis=0)
+    else:
+        a = np.mean(arr, axis=0)
+
+    # s = time.time()
+    v = getSTD(arrs, n)
+    # print("Time getSTD: " + str(s - time.time()))
     rsd = (100 * v) / a
     return a, v, rsd
 
 
-@app.callback(
-    dash.dependencies.Output('deviations_data', 'children'),
-    [dash.dependencies.Input('dev_selector_checklist', 'value'),
-     dash.dependencies.Input('dev_dropdown', 'value')]
-)
-def generate_deviations(selectors, dropdown):
-
+def generate_deviations_DF(selectors, dropdown):
+    global devDF
     newDF = df.copy()
+
     varList = []
     avgDict = {}
-    print(selectors)
+
     for attr in attributes:
         for column in list(newDF.columns):
             try:
@@ -847,10 +837,17 @@ def generate_deviations(selectors, dropdown):
         if(len(varList) == 0):
             pass
         else:
-            avg, std, rsd = averageVariables(varList, attr)
+            # s = time.time()
+            avg, std, rsd = getMean(varList, attr, 1)
+            # print("Time getMean: " + str(s - time.time()))
 
-            numScenarios = getNumZeros(varList)
-            minimum, q1, q2, q3, q4 = getQuartiles(varList)
+            # s = time.time()
+            numScenarios = getNumZeros(varList, 1)
+            # print("Time numZeros: " + str(s - time.time()))
+
+            # s = time.time()
+            minimum, q1, q2, q3, q4 = getQuartiles(varList, 0)
+            # print("Time getQuartiles: " + str(s - time.time()))
 
             avgDict[attr] = avg
             avgDict[attr+"_std"] = std
@@ -863,14 +860,133 @@ def generate_deviations(selectors, dropdown):
             varList = []
     avgDict["num_scenarios"] = numScenarios
     avgDict['lbnl_regions'] = newDF['Existing Social Acceptance - Mid:lbnl_region']
-    avgDF = pd.DataFrame.from_dict(avgDict)
-    print(avgDF['mean_cf_std'])
-    fig = px.scatter_mapbox(avgDF, lat='latitude', lon='longitude',
-                            size_max=5, color=dropdown, zoom=3, height=600)
+    devDF = pd.DataFrame.from_dict(avgDict)
+
+
+@app.callback(
+    dash.dependencies.Output('dev_dropdown', 'children'),
+    [dash.dependencies.Input('view_selector', 'value')]
+)
+def generate_dev_dropdown(val):
+    devAttrs = []
+    for attr in attributes:
+        devAttrs.append(attr + '_std')
+        devAttrs.append(attr + '_rsd')
+        devAttrs.append(attr + '_minimum')
+        devAttrs.append(attr + '_quartile1')
+        devAttrs.append(attr + '_quartile2')
+        devAttrs.append(attr + '_quartile3')
+        devAttrs.append(attr + '_quartile4')
+
+    return html.Div([
+        dcc.Dropdown(
+
+                    id='dev_dropdown_options',
+                    options=[
+                        {'label': da, 'value': da} for da in devAttrs
+                    ],
+                    value='mean_cf_std'
+                    ),
+
+    ])
+
+
+@app.callback(
+    dash.dependencies.Output('deviations_view', 'children'),
+    [dash.dependencies.Input('view_selector', 'value')]
+)
+def gen_deviations_view(val):
+    devAttrs_std = []
+    devAttrs_q = []
+    for attr in attributes:
+        devAttrs_std.append(attr + '_std')
+        devAttrs_std.append(attr + '_rsd')
+        devAttrs_q.append(attr + '_minimum')
+        devAttrs_q.append(attr + '_quartile1')
+        devAttrs_q.append(attr + '_quartile2')
+        devAttrs_q.append(attr + '_quartile3')
+        devAttrs_q.append(attr + '_quartile4')
+
+    return html.Div([
+        html.Div([
+            dcc.Dropdown(
+                id='dev_dropdown_std',
+                options=[
+                    {'label': i, 'value': i} for i in devAttrs_std
+                ],
+                value="mean_cf_std"
+            ),
+            html.Div(id="dev_data_std")
+        ],
+            className="six columns"
+        ),
+        html.Div([
+            dcc.Dropdown(
+                id="dev_dropdown_q",
+                options=[
+                    {'label': i, 'value': i} for i in devAttrs_q
+                ],
+                value="mean_cf_quartile1"
+            ),
+
+            html.Div(id="dev_data_q")
+        ],
+            className="six columns"
+        )
+    ])
+
+
+@ app.callback(
+    dash.dependencies.Output('dev_data_std', 'children'),
+    [dash.dependencies.Input('dev_selector_checklist', 'value'),
+     dash.dependencies.Input('dev_dropdown_std', 'value')]
+)
+def generate_deviations_std(selectors, dropdown):
+    global currentSelectors
+    global devDF
+    if(selectors != currentSelectors):
+        currentSelectors = selectors
+        generate_deviations_DF(selectors, dropdown)
+    time.sleep(4)
+    size_arr = devDF['num_scenarios'].to_numpy()
+    fig = px.scatter_mapbox(devDF, lat='latitude', lon='longitude', size=size_arr,
+                            size_max=3, color=dropdown, zoom=3, height=850)
     fig.update_layout(mapbox_style='open-street-map')
-    return dcc.Graph(
-        figure=fig
-    )
+
+    return html.Div([
+        html.Div([
+            dcc.Graph(
+                 figure=fig
+                 )
+        ])
+
+    ])
+
+
+@ app.callback(
+    dash.dependencies.Output('dev_data_q', 'children'),
+    [dash.dependencies.Input('dev_selector_checklist', 'value'),
+     dash.dependencies.Input('dev_dropdown_q', 'value')]
+)
+def generate_deviations_q(selectors, dropdown):
+    global currentSelectors
+    global devDF
+    if(selectors != currentSelectors):
+        currentSelectors = selectors
+        generate_deviations_DF(selectors, dropdown)
+
+    size_arr = devDF['num_scenarios'].to_numpy()
+    fig = px.scatter_mapbox(devDF, lat='latitude', lon='longitude', size=size_arr,
+                            size_max=3, color=dropdown, zoom=3, height=850)
+    fig.update_layout(mapbox_style='open-street-map')
+    return html.Div([
+        html.Div([
+            dcc.Graph(
+                figure=fig
+            )
+        ])
+
+    ])
 
 
 def wr(output):
