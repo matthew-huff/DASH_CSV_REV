@@ -8,7 +8,7 @@ import pandas as pd
 import dash_table
 import time
 import dash_bootstrap_components as dbc
-
+import app_pretty_mapbox
 diffDF = 0
 devDF = 0
 DIFF_FN = ""
@@ -149,15 +149,17 @@ app.layout = html.Div([
                                 style={'padding-top': 10}),
                     html.Div(id='output_curve_g1',
                                 style={'padding-top': 10})
-                ],  width=4),
+                ],  width=3),
 
 
 
                 dbc.Col([
-                    html.Div(id='mapbox_g1', style={'padding-top': 50})
-                ], width=8)
+                    html.Div(id='mapbox_output', style={'padding-top': 50})
+                ], width=9)
 
             ]),
+
+            html.Div(id='output_graphs')
         ])
 
     ], style={'padding': 40})
@@ -167,27 +169,6 @@ app.layout = html.Div([
 
 
 ])
-
-"""
-            dbc.Row([
-                dbc.Col(dbc.Card(options_content,
-                                 color='secondary', outline=True), width=4)
-            ]),
-
-            html.Div([
-                dbc.Row([
-                    dbc.Col(html.Div(id='location_scenario_selector'), width=4)
-                ])
-            ], style={'padding-top': 10})
-
-        ], className="mb-4")
-
-
-
-    ], style={'padding': 40})
-
-    # Data panel
-"""
 
 
 @ app.callback(
@@ -288,23 +269,14 @@ def locationSelector(numScenarios):
     return dbc.Card(locations_content, color='secondary', outline=True)
 
 
-@app.callback(
-    dash.dependencies.Output('mapbox_g1', 'children'),
-    [dash.dependencies.Input('num_scenarios', 'value')]
-)
-def mapbox_g1_func(num_scenarios):
-    content = [
-        dbc.CardHeader(
-            html.Div(id='mapbox_g1_selector')
-        ),
-        dbc.CardBody([
-            html.Div(id='output_mapbox_g1')
-        ])
-    ]
-
-    return dbc.Card(content, color='secondary', outline=True)
 
 
+############
+#
+#       MAPBOX SELECTORS
+#
+#
+############
 @app.callback(
     dash.dependencies.Output('mapbox_g1_selector', 'children'),
     [dash.dependencies.Input('num_scenarios', 'value')]
@@ -317,6 +289,22 @@ def mapbox_g1_selector_func(num_scenarios):
         ],
         value='mean_cf'
     )
+
+
+@app.callback(
+    dash.dependencies.Output('mapbox_g2_selector', 'children'),
+    [dash.dependencies.Input('num_scenarios', 'value')]
+)
+def mapbox_g2_selector_func(num_scenarios):
+    return dcc.Dropdown(
+        id='mapbox_g2_selector_dropdown',
+        options=[
+            {'label': i, 'value': i} for i in attributes
+        ],
+        value='mean_cf'
+    )
+###########################################
+
 
 
 @ app.callback(
@@ -357,13 +345,216 @@ def update_g1(num, loc, scenario, lcoe):
     ])
 
 
+
+
+######################################################################
+#
+#                   MAPBOX_OUTPUT
+#
+######################################################################
+@app.callback(
+    dash.dependencies.Output('mapbox_output', 'children'),
+    [dash.dependencies.Input('num_scenarios', 'value')]
+)
+def mapbox_output_func(num_scenarios):
+    content = []
+    if(num_scenarios == 1):
+        
+        return html.Div(id='mapbox_area_1')
+    elif(num_scenarios==2):
+        return html.Div(id='mapbox_area_2')
+
+
+
+#######
+#
+#       MAPBOX AREA 1
+#
+#######
+
+@app.callback(
+    dash.dependencies.Output('mapbox_area_1', 'children'),
+    [dash.dependencies.Input('num_scenarios', 'value')]
+)
+def mapbox_g1_func(num_scenarios):
+    content = [
+        dbc.CardHeader(
+            html.Div(id='mapbox_g1_selector')
+        ),
+        dbc.CardBody([
+            html.Div(id='output_mapbox_1'),
+            
+            html.Div(id="slider_output"),
+            html.Div(id="slider_text_boxes", style={'padding-top' : 100}),
+        ])
+    ]
+
+    return html.Div([
+        dbc.Card(content, color='secondary', outline=True)
+    ])
+    
+
+
 @ app.callback(
-    dash.dependencies.Output('output_mapbox_g1', 'children'),
+    dash.dependencies.Output('output_mapbox_1', 'children'),
     [dash.dependencies.Input('location_dropdown_g1', 'value'),
      dash.dependencies.Input('scenario_dropdown_g1', 'value'),
      dash.dependencies.Input('mapbox_g1_selector_dropdown', 'value'),
+     dash.dependencies.Input('num_scenarios', 'value'),
+     dash.dependencies.Input('slider', 'value') ])
+def update_map_g1(loc, scenario, dataVal, num_scenarios, slider_vals):
+    if(scenario == 'Select'):
+        return
+    size = 4
+    zoom = 5
+    if(loc == 'All'):
+        newDF = df.copy()
+    else:
+        newDF = df.loc[df['Existing Social Acceptance - Mid:lbnl_region'] == loc]
+    data = dataVal
+    if(num_scenarios == 1):
+        height = 850
+    elif(num_scenarios == 2):
+        height = 600
+    if(scenario == 'Select'):
+        pass
+    else:
+        if(loc == 'All'):
+            size = 2
+            zoom = 3
+        sortedDF = newDF.copy()
+        sortedDF = sortedDF.sort_values(by=[scenario+':mean_lcoe'])
+
+        sum_rows=0
+        counter = 0
+        #total = slider_vals[1]
+
+        total = slider_vals
+        for row in sortedDF[scenario+':'+data]:
+            if(sum_rows < total):
+                sum_rows += row
+                counter += 1
+            else:
+                break
+
+        d = sortedDF[:counter]
+
+        """
+        size_arr = np.full(len(newDF[scenario+":"+data]), size)
+        fig = px.scatter_mapbox(d, lat='latitude', lon='longitude', size=size_arr, hover_data=[
+            scenario+":"+data], size_max=size, color=scenario+":"+data, zoom=zoom, height=height)
+            """
+        fig = px.scatter_mapbox(d, lat='latitude', lon='longitude', color=scenario+":"+data, zoom=zoom, height=height)
+        fig.update_layout(mapbox_style='open-street-map')
+        return dcc.Graph(
+            figure=fig
+        )
+
+
+
+########
+#
+#       MAPBOX AREA 2
+#
+########
+
+@app.callback(
+    dash.dependencies.Output('mapbox_area_2', 'children'),
+    [dash.dependencies.Input('num_scenarios', 'value')]
+)
+def mapbox_2_func(num_scenarios):
+    content = [
+        dbc.CardHeader(
+            
+            dbc.Row([
+                dbc.Col(html.Div(id='mapbox_g1_selector'), width=5),
+                dbc.Col(html.Div(id='mapbox_g2_selector'), width=5)
+            ], justify='around')
+        ),
+        dbc.CardBody([
+
+            dbc.Row([
+                dbc.Col(html.Div(id='output_mapbox_1'), width=6),
+                dbc.Col(html.Div(id='output_mapbox_2'), width=6)
+            ], justify='around')
+            
+        ])
+    ]
+
+    return dbc.Card(content, color='secondary', outline=True)
+
+##########
+#
+#       Slider for mapbox
+#
+##########
+
+@app.callback(
+    dash.dependencies.Output("slider_text_boxes", 'children'),
+    [
+        dash.dependencies.Input('location_dropdown_g1', 'value'),
+        dash.dependencies.Input('scenario_dropdown_g1', 'value'),
+        dash.dependencies.Input('mapbox_g1_selector_dropdown', 'value'),
+        dash.dependencies.Input('num_scenarios', 'value'),
+    ]
+)
+def slider_textbox(location,scenario,attribute,num):
+    if(scenario=='Select'):
+        return
+    if(location == 'Select'):
+        newDF = df.copy()
+
+    return html.Div([
+        dcc.Input(id="slider_low", type="text", placeholder="Min"),
+        dcc.Input(id="slider_high", type="text", placeholder="Max")
+    ])
+
+
+
+
+@app.callback(
+    dash.dependencies.Output('slider_output', 'children'),
+    [
+        dash.dependencies.Input('location_dropdown_g1', 'value'),
+        dash.dependencies.Input('scenario_dropdown_g1', 'value'),
+        dash.dependencies.Input('mapbox_g1_selector_dropdown', 'value'),
+        dash.dependencies.Input('num_scenarios', 'value'),
+    ]
+)
+def slider_output(location, scenario, attribute, num_scenarios):
+    if(scenario=='Select'):
+        return
+    if(location == 'Select'):
+        newDF = df.copy()
+    else:
+        newDF = df.loc[df['Existing Social Acceptance - Mid:lbnl_region'] == location]
+
+    arr = newDF[scenario + ":" + attribute].to_numpy().astype(float)
+
+    total = int(np.sum(arr))
+
+    minVal = 0
+    maxValue = total
+
+    
+    return dcc.Slider(
+        id='slider', 
+        min = 0,
+        max = total,
+        step= 1,
+        value=total,
+        tooltip={'placement':'bottom'}
+    )
+
+
+
+@ app.callback(
+    dash.dependencies.Output('output_mapbox_2', 'children'),
+    [dash.dependencies.Input('location_dropdown_g2', 'value'),
+     dash.dependencies.Input('scenario_dropdown_g2', 'value'),
+     dash.dependencies.Input('mapbox_g2_selector_dropdown', 'value'),
      dash.dependencies.Input('num_scenarios', 'value'), ])
-def update_map_g1(loc, scenario, dataVal, num_scenarios):
+def update_map_g2(loc, scenario, dataVal, num_scenarios):
     if(scenario == 'Select'):
         return
     size = 4
@@ -387,12 +578,65 @@ def update_map_g1(loc, scenario, dataVal, num_scenarios):
         size_arr = np.full(len(newDF[scenario+":"+data]), size)
         fig = px.scatter_mapbox(newDF, lat='latitude', lon='longitude', size=size_arr, hover_data=[
             scenario+":"+data], size_max=size, color=scenario+":"+data, zoom=zoom, height=height)
-        fig.update_layout(mapbox_style='open-street-map')
+        fig.update_traces(marker_colorbar_title_text="", selector=dict(type='scattermapbox'))
+        fig.update_layout(mapbox_style='open-street-map', legend_orientation="h")
         return dcc.Graph(
             figure=fig
         )
 
 
+
+##########
+#
+#       Boxplots, Histograms, etc
+#
+##########
+
+@ app.callback(
+    dash.dependencies.Output('output_graphs', 'children'),
+    [dash.dependencies.Input('num_scenarios', 'value')]
+)
+def return_output_graphs(num_scenarios):
+    
+    if(num_scenarios == 1):
+        return html.Div(id='output_graph_1')
+    elif(num_scenarios ==2):
+        return html.Div(id='output_graphs_2')
+
+
+# Output Graphs for 1 scenario
+@app.callback(
+    dash.dependencies.Output('output_graph_1', 'children'),
+    [dash.dependencies.Input('mapbox_g1_selector_dropdown', 'value'),
+     dash.dependencies.Input('scenario_dropdown_g1', 'value'),
+     dash.dependencies.Input('location_dropdown_g1', 'value')]
+)
+def outputGraph_1(attr, scen, loc):
+    
+    if(loc == 'All'):
+        newDF = df.copy()
+    else:
+        fig = getViolinPlot(loc, scen, attr)
+
+    return dcc.Graph(
+        figure=fig
+    )
+
+
+def getViolinPlot(location, scenario, attribute):
+    if(location=='All'):
+        newDF = df.copy()
+    else:
+        newDF = df.loc[df['Existing Social Acceptance - Mid:lbnl_region'] == location]
+    val = scenario+":"+attribute
+    fig = px.violin(newDF, x=val, box=True, points="all")
+    return fig
+
+def getHistogramPlot(location,scenario,attribute):
+    newDF = df.loc[df['Existing Social Acceptance - Mid:lbnl_region'] == location]
+    val = scenario+":"+attribute
+    fig = px.histogram(newDF, x=val)
+    return fig
 if __name__ == '__main__':
     app.run_server(debug=True, dev_tools_ui=False,
                    dev_tools_props_check=False)
